@@ -21,11 +21,11 @@ jobs:
 
       - name: Upload Frontend ke EC2
         run: |
-          scp -i key.pem -o StrictHostKeyChecking=no index.html ec2-user@${{ secrets.FE_HOST }}:/tmp/
+          scp -i key.pem -o StrictHostKeyChecking=no index.html ec2-user@${{ secrets.FE }}:/tmp/
 
       - name: Deploy ke /var/www/html di EC2
         run: |
-          ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.FE_HOST }} "\
+          ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.FE }} "\
             sudo rm -rf /var/www/html/* && \
             sudo cp /tmp/index.html /var/www/html/ && \
             sudo chown apache:apache /var/www/html/index.html && \
