@@ -16,13 +16,25 @@ jobs:
 
       - name: Set up SSH
         run: |
+          # Membuat direktori .ssh
           mkdir -p ~/.ssh
+          
+          # Menambahkan kunci SSH dari Secret
           echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          cat ~/.ssh/id_rsa  # Debugging: check if the SSH key is correct
+          
+          # Menambahkan semua host untuk mencegah peringatan tentang kunci yang tidak dikenal
           ssh-keyscan -H ${{ secrets.FE }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.BE }} >> ~/.ssh/known_hosts  # Untuk backend jika perlu
+          
+          # Debug: Memeriksa isi dari .ssh dan kunci
+          ls -alh ~/.ssh
+          cat ~/.ssh/id_rsa
 
       - name: Deploy to Server (SCP)
         run: |
-          echo "Deploying to server..."  # Debugging step
-          scp -r ./index.html ec2-user@${{ secrets.FE }}:/var/www/html
+          # Menyalin file index.html ke server frontend
+          scp -i ~/.ssh/id_rsa -r ./index.html ec2-user@${{ secrets.FE }}:/var/www/html/
+          
+          # Jika perlu, menyalin ke server backend
+          # scp -i ~/.ssh/id_rsa -r ./index.html ec2-user@${{ secrets.BE }}:/var/www/html/
