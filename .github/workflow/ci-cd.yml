@@ -1,26 +1,32 @@
-name: Frontend CI/CD
+name: Deploy Frontend to EC2
 
 on:
   push:
     branches:
-      - main  
+      - main  # Pastikan ini adalah branch yang kamu gunakan
+    paths:
+      - 'index.html'  # Hanya trigger jika ada perubahan pada index.html
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Set up SSH
+      - name: Buat file private key dari Secret
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.FE_HOST }} >> ~/.ssh/known_hosts
-        env:
-          EC2_KEY: ${{ secrets.EC2_KEY }}
+          echo "${{ secrets.EC2_KEY }}" > key.pem
+          chmod 600 key.pem
 
-      - name: Deploy to Server (SCP)
+      - name: Upload Frontend ke EC2
         run: |
-          scp -r ./index.html user@${{ secrets.FE_HOST }}:/var/www/html
+          scp -i key.pem -o StrictHostKeyChecking=no index.html ec2-user@${{ secrets.FE_HOST }}:/tmp/
+
+      - name: Deploy ke /var/www/html di EC2
+        run: |
+          ssh -i key.pem -o StrictHostKeyChecking=no ec2-user@${{ secrets.FE_HOST }} "\
+            sudo rm -rf /var/www/html/* && \
+            sudo cp /tmp/index.html /var/www/html/ && \
+            sudo chown apache:apache /var/www/html/index.html && \
+            sudo chmod 755 /var/www/html/index.html"
