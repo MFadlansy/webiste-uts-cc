@@ -3,9 +3,9 @@ name: Frontend CI/CD
 on:
   push:
     branches:
-      - main  
+      - main
     paths:
-      - 'index.html'  
+      - 'index.html'
 
 jobs:
   deploy:
@@ -14,27 +14,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Set up SSH
+      - name: Create SSH Key
         run: |
-          # Membuat direktori .ssh
-          mkdir -p ~/.ssh
-          
-          # Menambahkan kunci SSH dari Secret
-          echo "${{ secrets.EC2_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          
-          # Menambahkan semua host untuk mencegah peringatan tentang kunci yang tidak dikenal
-          ssh-keyscan -H ${{ secrets.FE }} >> ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.BE }} >> ~/.ssh/known_hosts  # Untuk backend jika perlu
-          
-          # Debug: Memeriksa isi dari .ssh dan kunci
-          ls -alh ~/.ssh
-          cat ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_KEY }}" > key.pem
+          chmod 600 key.pem
 
-      - name: Deploy to Server (SCP)
+      - name: Upload index.html to EC2
         run: |
-          # Menyalin file index.html ke server frontend
-          scp -i ~/.ssh/id_rsa -r ./index.html ec2-user@${{ secrets.FE }}:/var/www/html/
-          
-          # Jika perlu, menyalin ke server backend
-          # scp -i ~/.ssh/id_rsa -r ./index.html ec2-user@${{ secrets.BE }}:/var/www/html/
+          scp -i key.pem -o StrictHostKeyChecking=no index.html ec2-user@${{ secrets.FE }}:/var/www/html/index.html
